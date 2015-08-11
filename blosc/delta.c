@@ -93,10 +93,7 @@ int delta_decoder32(uint8_t* src,  // source to be added
   for (i=0; i<(nbytes/4); i++) {
     ui32dest[i] += ui32src[i];
   }
-  /* Copy the leftover as-is (i.e. no delta) */
-  for (i=(nbytes/4)*4; i<nbytes; i++) {
-    dest[i] = src[i];
-  }
+  /* no need to copy the leftovers, dest is overwritten */
 
   return nbytes;
 }
