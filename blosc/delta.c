@@ -75,7 +75,7 @@ int delta_decoder8(uint8_t* src,  // source to be added
   size_t i;
 
   /* Add the delta */
-  for (i=0; i<(nbytes/4); i++) {
+  for (i=0; i< nbytes; i++) {
     dest[i] += src[i];
   }
   return nbytes;
