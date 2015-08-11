@@ -46,8 +46,8 @@ static char *test_encoder32(){
 }
 
 static char *test_encoder32_with_leftovers(){
-  uint32_t* ui32dest = (uint32_t*)dest;
   uint32_t* ui32src = (uint32_t*)src;
+  uint32_t* ui32dest = (uint32_t*)dest;
   for (i=0; i < size/4; i++) {
       ui32src[i] = 1;
       ui32dest[i] = 1;
@@ -70,11 +70,64 @@ static char *test_encoder32_with_leftovers(){
   return 0;
 }
 
+static char *test_decoder8(){
+  memset(src, 1, size);
+  memset(dest, 1, size);
+  delta_decoder8((uint8_t*)src, (uint8_t*)dest, size);
+  for (i=0; i < size; i++) {
+      mu_assert("ERROR: test_decoder8 result incorrect", dest[i] == 2);
+  }
+
+  return 0;
+}
+
+static char *test_decoder32(){
+  uint32_t* ui32src = (uint32_t*)src;
+  uint32_t* ui32dest = (uint32_t*)dest;
+  for (i=0; i < size/4; i++) {
+      ui32src[i] = 1;
+      ui32dest[i] = 1;
+  }
+  delta_decoder32((uint8_t*)src, (uint8_t*)dest, size);
+  for (i=0; i < size/4; i++) {
+      mu_assert("ERROR: test_decoder32 result incorrect", ui32dest[i] == 2);
+  }
+
+  return 0;
+}
+
+static char *test_decoder32_with_leftovers(){
+  uint32_t* ui32src = (uint32_t*)src;
+  uint32_t* ui32dest = (uint32_t*)dest;
+  for (i=0; i < size/4; i++) {
+      ui32src[i] = 1;
+      ui32dest[i] = 1;
+  }
+  for (i=(size-4); i < (size-1); i++) {
+      dest[i] = 1;
+  }
+  // delta only on size-1 i.e. 3 leftover bytes when using uint32
+  delta_decoder32((uint8_t*)src, (uint8_t*)dest, size-1);
+  for (i=0; i < (size-1)/4; i++) {
+      mu_assert("ERROR: test_decoder32_leftovers result incorrect (main)",
+              ui32dest[i] == 2);
+  }
+  // ensure the three leftover bytes were copied verbatim
+  for (i=(size-4); i < (size-1); i++) {
+      mu_assert("ERROR: tes_decoder32_leftovers result incorrect (leftovers)",
+              dest[i] == 1);
+  }
+
+  return 0;
+}
 
 static char *all_tests() {
   mu_run_test(test_encoder8);
   mu_run_test(test_encoder32);
   mu_run_test(test_encoder32_with_leftovers);
+  mu_run_test(test_decoder8);
+  mu_run_test(test_decoder32);
+  mu_run_test(test_decoder32_with_leftovers);
   return 0;
 }
 
