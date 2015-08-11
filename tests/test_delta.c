@@ -15,7 +15,7 @@ int tests_run = 0;
 
 /* Global vars */
 uint8_t *src, *dest;
-size_t size = 1*MB;
+size_t size = 1*MB; // size in bytes
 size_t i;
 
 
