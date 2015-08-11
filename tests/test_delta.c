@@ -24,7 +24,7 @@ static char *test_encoder8(){
   memset(dest, 1, size);
   delta_encoder8((uint8_t*)src, (uint8_t*)dest, size);
   for (i=0; i < size; i++) {
-      mu_assert("ERROR: delta_encoder8 result incorrect", dest[i] == 0);
+      mu_assert("ERROR: test_encoder8 result incorrect", dest[i] == 0);
   }
 
   return 0;
@@ -37,7 +37,7 @@ static char *test_encoder32(){
   memset(ui32dest, 1, size);
   delta_encoder32((uint8_t*)src, (uint8_t*)dest, size);
   for (i=0; i < size/4; i++) {
-      mu_assert("ERROR: delta_encoder32 result incorrect", ui32dest[i] == 0);
+      mu_assert("ERROR: test_encoder32 result incorrect", ui32dest[i] == 0);
   }
 
   return 0;
