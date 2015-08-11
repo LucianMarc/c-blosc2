@@ -542,6 +542,10 @@ static int blosc_c(const struct blosc_context* context, int32_t blocksize,
     _tmp = tmp;
   }
 
+  if (*(context->header_flags) & BLOSC_DODELTA) {
+      delta_encoder8(context->ref, _tmp, blocksize);
+  }
+
   /* Calculate acceleration for different compressors */
   accel = get_accel(context);
 
@@ -742,10 +746,6 @@ static int serial_blosc(struct blosc_context* context)
 
   uint8_t *tmp = my_malloc(context->blocksize);
   uint8_t *tmp2 = my_malloc(ebsize);
-
-  if (*(context->header_flags) & BLOSC_DODELTA) {
-      delta_encoder8(context->ref, context->src, context->sourcesize);
-  }
 
   for (j = 0; j < context->nblocks; j++) {
     if (context->compress && !(*(context->header_flags) & BLOSC_MEMCPYED)) {
@@ -1089,10 +1089,6 @@ static int write_compression_header(struct blosc_context* context, int clevel, i
 int blosc_compress_context(struct blosc_context* context)
 {
   int32_t ntbytes = 0;
-
-  if (*(context->header_flags) & BLOSC_DODELTA) {
-      delta_encoder8(context->ref, context->src, context->sourcesize);
-  }
 
   if (!(*(context->header_flags) & BLOSC_MEMCPYED)) {
     /* Do the actual compression */
