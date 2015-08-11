@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
   memcpy(srccpy, src, size);
 
   /* Get a compressed buffer */
-  cbytes = blosc_compress(clevel, doshuffle, typesize, size, src, dest, size);
+  cbytes = blosc_compress(clevel, doshuffle, typesize, size, src, dest, size, NULL);
 
   /* Get a decompressed buffer */
   nbytes = blosc_decompress(dest, dest2, size);

@@ -27,7 +27,7 @@ static char *test_maxout_less() {
 
   /* Get a compressed buffer */
   cbytes = blosc_compress(clevel, doshuffle, typesize, size, src,
-                          dest, size+15);
+                          dest, size+15, NULL);
   mu_assert("ERROR: cbytes is not 0", cbytes == 0);
 
   return 0;
@@ -39,7 +39,7 @@ static char *test_maxout_equal() {
 
   /* Get a compressed buffer */
   cbytes = blosc_compress(clevel, doshuffle, typesize, size, src,
-                          dest, size+16);
+                          dest, size+16, NULL);
   mu_assert("ERROR: cbytes is not correct", cbytes == size+16);
 
   /* Decompress the buffer */
@@ -54,7 +54,7 @@ static char *test_maxout_equal() {
 static char *test_maxout_great() {
   /* Get a compressed buffer */
   cbytes = blosc_compress(clevel, doshuffle, typesize, size, src,
-                          dest, size+17);
+                          dest, size+17, NULL);
   mu_assert("ERROR: cbytes is not 0", cbytes == size+16);
 
   /* Decompress the buffer */

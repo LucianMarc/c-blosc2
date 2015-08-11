@@ -36,22 +36,22 @@
  *
  */
 
-int delta_encoder8(uint8_t* src,  // - source to be delta'd against
+int delta_encoder8(const uint8_t* src,  // - source to be delta'd against
                    uint8_t* dest, // - destination to be diff'd, result will
                                   //   overwrite dest
                    size_t nbytes);// - size of src, src and nbytes should be
                                   //   the same
 
-int delta_encoder32(uint8_t* src,  // - source to be delta'd against
+int delta_encoder32(const uint8_t* src,  // - source to be delta'd against
                     uint8_t* dest, // - destination to be diff'd, result will
                                    //   overwrite dest
                     size_t nbytes); // - size of src, src and nbytes should be
                                    //   the same
 
-int delta_decoder8(uint8_t* src,  // source to be added
+int delta_decoder8(const uint8_t* src,  // source to be added
                    uint8_t* dest, // destination to be added too
                    size_t nbytes); // size of src, must be equal with size of dest
 
-int delta_decoder32(uint8_t* src,  // source to be added
+int delta_decoder32(const uint8_t* src,  // source to be added
                     uint8_t* dest, // destination to be added too
                     size_t nbytes); // size of src, must be equal with size of dest

@@ -52,7 +52,7 @@ extern "C" {
 #define BLOSC_NOSHUFFLE   0  /* no shuffle */
 #define BLOSC_SHUFFLE     1  /* byte-wise shuffle */
 #define BLOSC_BITSHUFFLE  2  /* bit-wise shuffle */
-#define BLOSC_DELTA       3  /* delta filter */
+#define BLOSC_DELTA       4  /* delta filter */
 
 /* Maximum number of simultaneous filters */
 #define BLOSC_MAX_FILTERS 5
@@ -61,6 +61,7 @@ extern "C" {
 #define BLOSC_DOSHUFFLE    0x1	/* byte-wise shuffle */
 #define BLOSC_MEMCPYED     0x2	/* plain copy */
 #define BLOSC_DOBITSHUFFLE 0x4  /* bit-wise shuffle */
+#define BLOSC_DODELTA      0x8  /* delta */
 
 /* Codes for the different compressors shipped with Blosc */
 #define BLOSC_BLOSCLZ   0
@@ -163,7 +164,7 @@ BLOSC_EXPORT void blosc_destroy(void);
   */
 BLOSC_EXPORT int blosc_compress(int clevel, int doshuffle, size_t typesize,
 				size_t nbytes, const void *src, void *dest,
-				size_t destsize);
+				size_t destsize, const void *base);
 
 
 /**

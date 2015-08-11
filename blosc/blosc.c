@@ -19,6 +19,7 @@
 #include "blosc.h"
 #include "shuffle.h"
 #include "blosclz.h"
+#include "delta.h"
 #if defined(HAVE_LZ4)
   #include "lz4.h"
   #include "lz4hc.h"
@@ -102,6 +103,7 @@ struct blosc_context {
   uint8_t* bstarts;               /* Start of the buffer past header info */
   int32_t compcode;               /* Compressor code to use */
   int clevel;                     /* Compression level (1-9) */
+  const uint8_t* base;                    /* Base for delta */
 
   /* Threading */
   int32_t numthreads;
@@ -741,6 +743,10 @@ static int serial_blosc(struct blosc_context* context)
   uint8_t *tmp = my_malloc(context->blocksize);
   uint8_t *tmp2 = my_malloc(ebsize);
 
+  if (*(context->header_flags) & BLOSC_DODELTA) {
+      delta_encoder8(context->base, context->src, context->sourcesize);
+  }
+
   for (j = 0; j < context->nblocks; j++) {
     if (context->compress && !(*(context->header_flags) & BLOSC_MEMCPYED)) {
       _sw32(context->bstarts + j * 4, ntbytes);
@@ -921,7 +927,8 @@ static int initialize_context_compression(struct blosc_context* context,
                           size_t destsize,
                           int32_t compressor,
                           int32_t blocksize,
-                          int32_t numthreads)
+                          int32_t numthreads,
+                          const void* base)
 {
   /* Set parameters */
   context->compress = 1;
@@ -935,6 +942,7 @@ static int initialize_context_compression(struct blosc_context* context,
   context->numthreads = numthreads;
   context->end_threads = 0;
   context->clevel = clevel;
+  context->base = (const uint8_t*)base;
 
   /* Check buffer size limits */
   if (sourcesize > BLOSC_MAX_BUFFERSIZE) {
@@ -950,10 +958,17 @@ static int initialize_context_compression(struct blosc_context* context,
     fprintf(stderr, "`clevel` parameter must be between 0 and 9!\n");
     return -10;
   }
-
+  int dobitbyteshuffle = doshuffle & 0x000f;
+  int dodelta = doshuffle & 0x00f0;
+  dodelta = dodelta >> 1;
   /* Shuffle */
-  if (doshuffle != 0 && doshuffle != 1 && doshuffle != 2) {
+  if (dobitbyteshuffle != 0 && dobitbyteshuffle != 1 && dobitbyteshuffle != 2) {
     fprintf(stderr, "`shuffle` parameter must be either 0, 1 or 2!\n");
+    return -10;
+  }
+  /* Delta */
+  if (dodelta != 0 && dodelta != 1) {
+    fprintf(stderr, "`delta` parameter must be either 0 or 1!\n");
     return -10;
   }
 
@@ -1044,15 +1059,27 @@ static int write_compression_header(struct blosc_context* context, int clevel, i
     *(context->header_flags) |= BLOSC_MEMCPYED;
   }
 
-  if (doshuffle == BLOSC_SHUFFLE) {
+
+  int dobitbyteshuffle = doshuffle & 0x000f;
+  int dodelta = doshuffle & 0x00f0;
+  dodelta = dodelta >> 1;
+
+  if (dobitbyteshuffle == BLOSC_SHUFFLE) {
     /* Byte-shuffle is active */
     *(context->header_flags) |= BLOSC_DOSHUFFLE;     /* bit 0 set to one in flags */
   }
 
-  if (doshuffle == BLOSC_BITSHUFFLE) {
+  if (dobitbyteshuffle == BLOSC_BITSHUFFLE) {
     /* Bit-shuffle is active */
     *(context->header_flags) |= BLOSC_DOBITSHUFFLE;  /* bit 2 set to one in flags */
   }
+
+  if (dodelta == BLOSC_DELTA) {
+    /* Byte-shuffle is active */
+    *(context->header_flags) |= BLOSC_DODELTA;       /* bit 3 set to one in flags */
+  }
+
+
 
   *(context->header_flags) |= compcode << 5;      /* compressor format start at bit 5 */
 
@@ -1062,6 +1089,10 @@ static int write_compression_header(struct blosc_context* context, int clevel, i
 int blosc_compress_context(struct blosc_context* context)
 {
   int32_t ntbytes = 0;
+
+  if (*(context->header_flags) & BLOSC_DODELTA) {
+      delta_encoder8(context->base, context->src, context->sourcesize);
+  }
 
   if (!(*(context->header_flags) & BLOSC_MEMCPYED)) {
     /* Do the actual compression */
@@ -1115,7 +1146,7 @@ int blosc_compress_ctx(int clevel, int doshuffle, size_t typesize,
   context.threads_started = 0;
   error = initialize_context_compression(&context, clevel, doshuffle, typesize, nbytes,
                                   src, dest, destsize, blosc_compname_to_compcode(compressor),
-                                  blocksize, numinternalthreads);
+                                  blocksize, numinternalthreads, NULL);
   if (error < 0) { return error; }
 
   error = write_compression_header(&context, clevel, doshuffle);
@@ -1133,7 +1164,7 @@ int blosc_compress_ctx(int clevel, int doshuffle, size_t typesize,
 
 /* The public routine for compression.  See blosc.h for docstrings. */
 int blosc_compress(int clevel, int doshuffle, size_t typesize, size_t nbytes,
-                   const void *src, void *dest, size_t destsize)
+                   const void *src, void *dest, size_t destsize, const void *base)
 {
   int error;
   int result;
@@ -1141,7 +1172,7 @@ int blosc_compress(int clevel, int doshuffle, size_t typesize, size_t nbytes,
   pthread_mutex_lock(&global_comp_mutex);
 
   error = initialize_context_compression(g_global_context, clevel, doshuffle, typesize, nbytes,
-                                  src, dest, destsize, g_compressor, g_force_blocksize, g_threads);
+                                  src, dest, destsize, g_compressor, g_force_blocksize, g_threads, base);
   if (error < 0) { return error; }
 
   error = write_compression_header(g_global_context, clevel, doshuffle);
