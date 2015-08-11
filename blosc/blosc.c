@@ -103,7 +103,7 @@ struct blosc_context {
   uint8_t* bstarts;               /* Start of the buffer past header info */
   int32_t compcode;               /* Compressor code to use */
   int clevel;                     /* Compression level (1-9) */
-  const uint8_t* base;                    /* Base for delta */
+  const uint8_t* ref;             /* Reference for delta */
 
   /* Threading */
   int32_t numthreads;
@@ -744,7 +744,7 @@ static int serial_blosc(struct blosc_context* context)
   uint8_t *tmp2 = my_malloc(ebsize);
 
   if (*(context->header_flags) & BLOSC_DODELTA) {
-      delta_encoder8(context->base, context->src, context->sourcesize);
+      delta_encoder8(context->ref, context->src, context->sourcesize);
   }
 
   for (j = 0; j < context->nblocks; j++) {
@@ -928,7 +928,7 @@ static int initialize_context_compression(struct blosc_context* context,
                           int32_t compressor,
                           int32_t blocksize,
                           int32_t numthreads,
-                          const void* base)
+                          const void* ref)
 {
   /* Set parameters */
   context->compress = 1;
@@ -942,7 +942,7 @@ static int initialize_context_compression(struct blosc_context* context,
   context->numthreads = numthreads;
   context->end_threads = 0;
   context->clevel = clevel;
-  context->base = (const uint8_t*)base;
+  context->ref = (const uint8_t*)ref;
 
   /* Check buffer size limits */
   if (sourcesize > BLOSC_MAX_BUFFERSIZE) {
@@ -1091,7 +1091,7 @@ int blosc_compress_context(struct blosc_context* context)
   int32_t ntbytes = 0;
 
   if (*(context->header_flags) & BLOSC_DODELTA) {
-      delta_encoder8(context->base, context->src, context->sourcesize);
+      delta_encoder8(context->ref, context->src, context->sourcesize);
   }
 
   if (!(*(context->header_flags) & BLOSC_MEMCPYED)) {
@@ -1164,7 +1164,7 @@ int blosc_compress_ctx(int clevel, int doshuffle, size_t typesize,
 
 /* The public routine for compression.  See blosc.h for docstrings. */
 int blosc_compress(int clevel, int doshuffle, size_t typesize, size_t nbytes,
-                   const void *src, void *dest, size_t destsize, const void *base)
+                   const void *src, void *dest, size_t destsize, const void *ref)
 {
   int error;
   int result;
@@ -1172,7 +1172,7 @@ int blosc_compress(int clevel, int doshuffle, size_t typesize, size_t nbytes,
   pthread_mutex_lock(&global_comp_mutex);
 
   error = initialize_context_compression(g_global_context, clevel, doshuffle, typesize, nbytes,
-                                  src, dest, destsize, g_compressor, g_force_blocksize, g_threads, base);
+                                  src, dest, destsize, g_compressor, g_force_blocksize, g_threads, ref);
   if (error < 0) { return error; }
 
   error = write_compression_header(g_global_context, clevel, doshuffle);
