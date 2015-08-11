@@ -43,10 +43,31 @@ static char *test_encoder32(){
   return 0;
 }
 
+static char *test_encoder32_with_leftovers(){
+  uint32_t* ui32dest = (uint32_t*)dest;
+  uint32_t* ui32src = (uint32_t*)src;
+  memset(ui32src, 1, size);
+  memset(ui32dest, 1, size);
+  // delta only on size-1 i.e. 3 leftover bytes when using uint32
+  delta_encoder32((uint8_t*)src, (uint8_t*)dest, size-1);
+  for (i=0; i < (size-1)/4; i++) {
+      mu_assert("ERROR: test_encoder32_leftovers result incorrect (main)",
+              ui32dest[i] == 0);
+  }
+  // ensure the three leftover bytes were copied verbatim
+  for (i=(size-4); i < (size-1); i++) {
+      mu_assert("ERROR: tes_encoder32_leftovers result incorrect (leftovers)",
+              dest[i] == 1);
+  }
+
+  return 0;
+}
+
 
 static char *all_tests() {
   mu_run_test(test_encoder8);
   mu_run_test(test_encoder32);
+  mu_run_test(test_encoder32_with_leftovers);
   return 0;
 }
 
