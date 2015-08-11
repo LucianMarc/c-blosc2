@@ -30,13 +30,23 @@ static char *test_encoder8(){
   return 0;
 }
 
-static char *test_delta_two(){
+static char *test_encoder32(){
+  uint32_t* ui32dest = (uint32_t*)dest;
+  uint32_t* ui32src = (uint32_t*)src;
+  memset(ui32src, 1, size);
+  memset(ui32dest, 1, size);
+  delta_encoder8((uint8_t*)src, (uint8_t*)dest, size);
+  for (i=0; i < size/4; i++) {
+      mu_assert("ERROR: delta_encoder32 result incorrect", ui32dest[i] == 0);
+  }
+
   return 0;
 }
 
+
 static char *all_tests() {
   mu_run_test(test_encoder8);
-  mu_run_test(test_delta_two);
+  mu_run_test(test_encoder32);
   return 0;
 }
 
