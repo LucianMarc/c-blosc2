@@ -48,6 +48,8 @@ if(COMPILER_SUPPORT_AVX2)
 endif(COMPILER_SUPPORT_AVX2)
 set(SOURCES ${SOURCES} shuffle.c)
 
+set(SOURCES ${SOURCES} delta.c)
+
 # library install directory
 set(lib_dir lib${LIB_SUFFIX})
 set(version_string ${BLOSC_VERSION_MAJOR}.${BLOSC_VERSION_MINOR}.${BLOSC_VERSION_PATCH})
