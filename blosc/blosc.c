@@ -964,15 +964,15 @@ static int initialize_context_compression(struct blosc_context* context,
   }
   int dobitbyteshuffle = doshuffle & 0x000f;
   int dodelta = doshuffle & 0x00f0;
-  dodelta = dodelta >> 1;
+  dodelta = dodelta >> 4;
   /* Shuffle */
   if (dobitbyteshuffle != 0 && dobitbyteshuffle != 1 && dobitbyteshuffle != 2) {
     fprintf(stderr, "`shuffle` parameter must be either 0, 1 or 2!\n");
     return -10;
   }
   /* Delta */
-  if (dodelta != 0 && dodelta != 1) {
-    fprintf(stderr, "`delta` parameter must be either 0 or 1!\n");
+  if (dodelta != 0 && dodelta != 4) {
+    fprintf(stderr, "`delta` parameter must be either 0 or 4!\n");
     return -10;
   }
 
@@ -1066,7 +1066,7 @@ static int write_compression_header(struct blosc_context* context, int clevel, i
 
   int dobitbyteshuffle = doshuffle & 0x000f;
   int dodelta = doshuffle & 0x00f0;
-  dodelta = dodelta >> 1;
+  dodelta = dodelta >> 4;
 
   if (dobitbyteshuffle == BLOSC_SHUFFLE) {
     /* Byte-shuffle is active */
