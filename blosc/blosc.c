@@ -529,22 +529,23 @@ static int blosc_c(const struct blosc_context* context, int32_t blocksize,
   int accel;
   int bscount;
 
+  if (*(context->header_flags) & BLOSC_DODELTA) {
+      delta_encoder8(context->ref, _tmp, blocksize);
+  }
+
   if (*(context->header_flags) & BLOSC_DOSHUFFLE) {
     /* Byte shuffling only makes sense if typesize > 1 */
-    shuffle(typesize, blocksize, src, tmp);
+    shuffle(typesize, blocksize, _tmp, tmp);
     _tmp = tmp;
   }
   /* We don't allow more than 1 filter at the same time (yet) */
   else if (*(context->header_flags) & BLOSC_DOBITSHUFFLE) {
-    bscount = bitshuffle(typesize, blocksize, src, tmp, dest);
+    bscount = bitshuffle(typesize, blocksize, _tmp, tmp, dest);
     if (bscount < 0)
       return bscount;
     _tmp = tmp;
   }
 
-  if (*(context->header_flags) & BLOSC_DODELTA) {
-      delta_encoder8(context->ref, _tmp, blocksize);
-  }
 
   /* Calculate acceleration for different compressors */
   accel = get_accel(context);
