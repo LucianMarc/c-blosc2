@@ -730,6 +730,9 @@ static int blosc_d(struct blosc_context* context, int32_t blocksize, int32_t lef
     if (bscount < 0)
       return bscount;
   }
+  if (*(context->header_flags) & BLOSC_DODELTA) {
+      delta_encoder8(context->ref, dest, blocksize);
+  }
 
   /* Return the number of uncompressed bytes */
   return ntbytes;
