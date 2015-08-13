@@ -528,9 +528,11 @@ static int blosc_c(const struct blosc_context* context, int32_t blocksize,
   char *compname;
   int accel;
   int bscount;
+  printf("Enter blosc_c\n");
 
   if (*(context->header_flags) & BLOSC_DODELTA) {
       delta_encoder8(context->ref, _tmp, blocksize);
+      printf("Apparently we have done some delta stuff on compression\n");
   }
 
   if (*(context->header_flags) & BLOSC_DOSHUFFLE) {
@@ -654,6 +656,7 @@ static int blosc_d(struct blosc_context* context, int32_t blocksize, int32_t lef
   char *compname;
   int bscount;
 
+  printf("enter blosc_d\n");
   if ((*(context->header_flags) & BLOSC_DOSHUFFLE) || \
       (*(context->header_flags) & BLOSC_DOBITSHUFFLE)) {
     _tmp = tmp;
@@ -721,7 +724,6 @@ static int blosc_d(struct blosc_context* context, int32_t blocksize, int32_t lef
     _tmp += nbytes;
     ntbytes += nbytes;
   } /* Closes j < nsplits */
-
   if (*(context->header_flags) & BLOSC_DOSHUFFLE) {
     unshuffle(typesize, blocksize, tmp, dest);
   }
@@ -731,7 +733,8 @@ static int blosc_d(struct blosc_context* context, int32_t blocksize, int32_t lef
       return bscount;
   }
   if (*(context->header_flags) & BLOSC_DODELTA) {
-      delta_encoder8(context->ref, dest, blocksize);
+      printf("Apparently we have done some delta stuff on decompression");
+      delta_decoder8(context->ref, dest, blocksize);
   }
 
   /* Return the number of uncompressed bytes */
@@ -750,6 +753,7 @@ static int serial_blosc(struct blosc_context* context)
 
   uint8_t *tmp = my_malloc(context->blocksize);
   uint8_t *tmp2 = my_malloc(ebsize);
+  printf("voodoo 4\n");
 
   for (j = 0; j < context->nblocks; j++) {
     if (context->compress && !(*(context->header_flags) & BLOSC_MEMCPYED)) {
@@ -782,6 +786,7 @@ static int serial_blosc(struct blosc_context* context)
     }
     else {
       if (*(context->header_flags) & BLOSC_MEMCPYED) {
+        printf("voodoo 5\n");
         /* We want to memcpy only */
         memcpy(context->dest+j*context->blocksize,
                 context->src+BLOSC_MAX_OVERHEAD+j*context->blocksize,
@@ -789,6 +794,7 @@ static int serial_blosc(struct blosc_context* context)
         cbytes = bsize;
       }
       else {
+        printf("voodoo 6\n");
         /* Regular decompression */
         cbytes = blosc_d(context, bsize, leftoverblock,
                           context->src + sw32_(context->bstarts + j * 4),
@@ -815,6 +821,7 @@ static int parallel_blosc(struct blosc_context* context)
 {
   int rc;
 
+  printf("Enter parallel blosc\n");
   /* Check whether we need to restart threads */
   blosc_set_nthreads_(context);
 
@@ -844,6 +851,8 @@ static int parallel_blosc(struct blosc_context* context)
 static int do_job(struct blosc_context* context)
 {
   int32_t ntbytes;
+
+  printf("enter do_job\n");
 
   /* Run the serial version when nthreads is 1 or when the buffers are
      not much larger than blocksize */
@@ -1079,7 +1088,8 @@ static int write_compression_header(struct blosc_context* context, int clevel, i
   }
 
   if (dodelta == BLOSC_DELTA) {
-    /* Byte-shuffle is active */
+    printf("Will store doing delta\n");
+    /* delta is active */
     *(context->header_flags) |= BLOSC_DODELTA;       /* bit 3 set to one in flags */
   }
 
@@ -1191,6 +1201,8 @@ int blosc_run_decompression_with_context(struct blosc_context* context,
                                          size_t destsize,
                                          int numinternalthreads)
 {
+
+  printf("enter blosc_run_decompression_with_context\n");
   uint8_t version;
   uint8_t versionlz;
   uint32_t ctbytes;
@@ -1278,6 +1290,7 @@ int blosc_decompress_ctx(const void *src, void *dest, size_t destsize,
 /* The public routine for decompression.  See blosc.h for docstrings. */
 int blosc_decompress(const void *src, void *dest, size_t destsize)
 {
+  printf("enter blosc_decompress\n");
   return blosc_run_decompression_with_context(g_global_context, src, dest, destsize, g_threads);
 }
 
@@ -1425,6 +1438,7 @@ static void *t_blosc(void *ctxt)
   uint8_t *tmp;
   uint8_t *tmp2;
   int rc;
+  printf("enter t_blosc\n");
 
   while(1)
   {
