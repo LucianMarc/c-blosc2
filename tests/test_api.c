@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
   cbytes = blosc_compress(clevel, doshuffle, typesize, size, src, dest, size, NULL);
 
   /* Get a decompressed buffer */
-  nbytes = blosc_decompress(dest, dest2, size);
+  nbytes = blosc_decompress(dest, dest2, size, NULL);
 
   /* Run all the suite */
   result = all_tests();

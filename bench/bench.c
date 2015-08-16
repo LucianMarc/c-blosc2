@@ -278,7 +278,7 @@ void do_bench(char *compressor, char *shuffle, int nthreads, int size, int elsiz
           nbytes = size;
         }
         else {
-          nbytes = blosc_decompress(dest[j], dest2, size);
+          nbytes = blosc_decompress(dest[j], dest2, size, NULL);
         }
       }
     }

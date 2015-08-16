@@ -43,7 +43,7 @@ static char *test_maxout_equal() {
   mu_assert("ERROR: cbytes is not correct", cbytes == size+16);
 
   /* Decompress the buffer */
-  nbytes = blosc_decompress(dest, dest2, size);
+  nbytes = blosc_decompress(dest, dest2, size, NULL);
   mu_assert("ERROR: nbytes incorrect(1)", nbytes == size);
 
   return 0;
@@ -58,7 +58,7 @@ static char *test_maxout_great() {
   mu_assert("ERROR: cbytes is not 0", cbytes == size+16);
 
   /* Decompress the buffer */
-  nbytes = blosc_decompress(dest, dest2, size);
+  nbytes = blosc_decompress(dest, dest2, size, NULL);
   mu_assert("ERROR: nbytes incorrect(1)", nbytes == size);
 
   return 0;

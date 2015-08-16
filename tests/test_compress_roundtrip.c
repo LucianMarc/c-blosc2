@@ -35,7 +35,7 @@ static int test_compress_roundtrip(size_t type_size, size_t num_elements,
   blosc_compress(compression_level, 64, type_size, buffer_size,
     original, intermediate, buffer_size + BLOSC_MAX_OVERHEAD, ref);
   printf("Start decompression\n");
-  blosc_decompress(intermediate, result, buffer_size);
+  blosc_decompress(intermediate, result, buffer_size, ref);
 
   /* The round-tripped data matches the original data when the
      result of memcmp is 0. */

@@ -1291,7 +1291,7 @@ int blosc_decompress_ctx(const void *src, void *dest, size_t destsize,
 
 
 /* The public routine for decompression.  See blosc.h for docstrings. */
-int blosc_decompress(const void *src, void *dest, size_t destsize)
+int blosc_decompress(const void *src, void *dest, size_t destsize, const void *ref)
 {
   printf("enter blosc_decompress\n");
   return blosc_run_decompression_with_context(g_global_context, src, dest, destsize, g_threads);
