@@ -733,7 +733,7 @@ static int blosc_d(struct blosc_context* context, int32_t blocksize, int32_t lef
       return bscount;
   }
   if (*(context->header_flags) & BLOSC_DODELTA) {
-      printf("Apparently we have done some delta stuff on decompression");
+      printf("Apparently we have done some delta stuff on decompression\n");
       delta_decoder8(context->ref, dest, blocksize);
   }
 
