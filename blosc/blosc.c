@@ -531,8 +531,13 @@ static int blosc_c(const struct blosc_context* context, int32_t blocksize,
   printf("Enter blosc_c\n");
 
   if (*(context->header_flags) & BLOSC_DODELTA) {
-      delta_encoder8(context->ref, _tmp, blocksize);
+      memcpy(src, tmp, blocksize);
+      printf("context->ref: %i\n", context->ref);
+      printf("before: %i\n", ((uint8_t*)_tmp)[0]);
+      delta_encoder8(context->ref, tmp, blocksize);
+      printf("after: %i\n", ((uint8_t*)_tmp)[0]);
       printf("Apparently we have done some delta stuff on compression\n");
+      _tmp = tmp;
   }
 
   if (*(context->header_flags) & BLOSC_DOSHUFFLE) {
