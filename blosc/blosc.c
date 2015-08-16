@@ -1248,6 +1248,8 @@ int blosc_run_decompression_with_context(struct blosc_context* context,
     if (((context->sourcesize % L1) == 0) || (context->numthreads > 1)) {
       /* More effective with large buffers that are multiples of the
        cache size or multi-cores */
+      printf("about to enter do_job\n");
+
       ntbytes = do_job(context);
       if (ntbytes < 0) {
         return -1;
@@ -1260,6 +1262,7 @@ int blosc_run_decompression_with_context(struct blosc_context* context,
   }
   else {
     /* Do the actual decompression */
+    printf("about to enter do_job to do actual decompression\n");
     ntbytes = do_job(context);
     if (ntbytes < 0) {
       return -1;
