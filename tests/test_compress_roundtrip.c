@@ -26,6 +26,10 @@ static int test_compress_roundtrip(size_t type_size, size_t num_elements,
   void* intermediate = blosc_test_malloc(buffer_alignment, buffer_size + BLOSC_MAX_OVERHEAD);
   void* result = blosc_test_malloc(buffer_alignment, buffer_size);
 
+  printf("before: %i\n", ((uint32_t*)ref)[0]);
+  memset(ref, 156, buffer_size);
+  printf("after: %i\n", ((uint32_t*)ref)[0]);
+
   /* Fill the input data buffer with random values. */
   //blosc_test_fill_random(original, buffer_size);
 
@@ -34,6 +38,8 @@ static int test_compress_roundtrip(size_t type_size, size_t num_elements,
   printf("Start compression\n");
   blosc_compress(compression_level, 64, type_size, buffer_size,
     original, intermediate, buffer_size + BLOSC_MAX_OVERHEAD, ref);
+  // ref is actually stored in the global context, the ref parameter here is
+  // presumably ignored!
   printf("Start decompression\n");
   blosc_decompress(intermediate, result, buffer_size, ref);
 
@@ -41,6 +47,9 @@ static int test_compress_roundtrip(size_t type_size, size_t num_elements,
      result of memcmp is 0. */
   int exit_code = memcmp(original, result, buffer_size) ?
     EXIT_FAILURE : EXIT_SUCCESS;
+
+  printf("original: %i\n", ((uint8_t*)original)[0]);
+  printf("result: %i\n", ((uint8_t*)result)[0]);
 
   /* Free allocated memory. */
   blosc_test_free(original);

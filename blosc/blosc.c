@@ -738,8 +738,11 @@ static int blosc_d(struct blosc_context* context, int32_t blocksize, int32_t lef
       return bscount;
   }
   if (*(context->header_flags) & BLOSC_DODELTA) {
+      printf("context->ref: %i\n", context->ref);
       printf("Apparently we have done some delta stuff on decompression\n");
+      printf("before: %i\n", ((uint8_t*)dest)[0]);
       delta_decoder8(context->ref, dest, blocksize);
+      printf("after: %i\n", ((uint8_t*)dest)[0]);
   }
 
   /* Return the number of uncompressed bytes */
