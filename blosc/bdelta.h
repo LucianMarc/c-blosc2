@@ -29,7 +29,8 @@ extern "C" {
   The input buffer and the output buffer can not overlap.
 */
 
-int bdelta_compress(const void* input, int length, void* output);
+int bdelta_compress(const void* input, int length, void* output, int maxout,
+		    const void* dref, int drefsize);
 
 /**
   Decompress a block of compressed data and returns the size of the
@@ -43,7 +44,8 @@ int bdelta_compress(const void* input, int length, void* output);
   more than what is specified in maxout.
  */
 
-int bdelta_decompress(const void* input, int length, void* output, int maxout);
+int bdelta_decompress(const void* input, int length, void* output, int maxout,
+		      const void* dref, int drefsize);
 
 #if defined (__cplusplus)
 }

@@ -176,29 +176,27 @@ int blosc2_append_buffer(schunk_header* sc_header, size_t typesize,
   uint8_t* filters = decode_filters(enc_filters);
   int clevel = sc_header->clevel;
   char* compname;
+  uint8_t* dref = NULL;
+  int32_t drefsize = 0;
 
   /* Apply filters prior to compress */
   if (filters[0] == BLOSC_DELTA) {
-    if (sc_header->nchunks > 0) {
-      ret = delta_encoder8(sc_header, nbytes, src, dest);
-      /* dest = memcpy(dest, src, nbytes); */
-      if (ret < 0) {
-	return ret;
-      }
-      src = dest;
-    }
-    else {
+    enc_filters = enc_filters >> 3;
+    if (sc_header->nchunks == 0) {
       /* The reference will not be compressed in-memory */
       clevel = 0;
     }
-    enc_filters = enc_filters >> 3;
+    else {
+      dref = (uint8_t *)sc_header->data[0] + BLOSC_MAX_OVERHEAD;
+      drefsize = *(int32_t*)(sc_header->data[0] + 4);
+    }
   }
 
   /* Compress the src buffer using super-chunk defaults */
   blosc_compcode_to_compname(sc_header->compressor, &compname);
   blosc_set_compressor(compname);
   cbytes = blosc_compress(clevel, enc_filters, typesize, nbytes, src, chunk,
-			  nbytes + BLOSC_MAX_OVERHEAD);
+			  nbytes + BLOSC_MAX_OVERHEAD, dref, drefsize);
   if (cbytes < 0) {
     free(chunk);
     free(dest);
@@ -222,6 +220,8 @@ int blosc2_decompress_chunk(schunk_header* sc_header, int nchunk,
   int32_t nbytes;
   uint16_t enc_filters = sc_header->filters;
   uint8_t* filters = decode_filters(enc_filters);
+  uint8_t* dref = (uint8_t *)sc_header->data[0] + BLOSC_MAX_OVERHEAD;
+  int32_t drefsize = *(int32_t*)(sc_header->data[0] + 4);
 
   if (nchunk >= nchunks) {
     return -10;
@@ -234,7 +234,7 @@ int blosc2_decompress_chunk(schunk_header* sc_header, int nchunk,
   *dest = malloc(nbytes);
 
   /* And decompress it */
-  chunksize = blosc_decompress(src, *dest, nbytes);
+  chunksize = blosc_decompress(src, *dest, nbytes, dref, drefsize);
   if (chunksize < 0) {
     return chunksize;
   }
@@ -243,9 +243,9 @@ int blosc2_decompress_chunk(schunk_header* sc_header, int nchunk,
   }
 
   /* Apply filters after de-compress */
-  if (filters[0] == BLOSC_DELTA && sc_header->nchunks > 0) {
-    delta_decoder8(sc_header, nbytes, *dest);
-  }
+  /* if (filters[0] == BLOSC_DELTA && sc_header->nchunks > 0) { */
+  /*   delta_decoder8(sc_header, nbytes, *dest); */
+  /* } */
 
   return chunksize;
 }

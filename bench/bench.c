@@ -250,7 +250,7 @@ void do_bench(char *compressor, char *shuffle, int nthreads, int size, int elsiz
     for (i = 0; i < niter; i++) {
       for (j = 0; j < nchunks; j++) {
         cbytes = blosc_compress(clevel, doshuffle, elsize, size, src,
-                                dest[j], size+BLOSC_MAX_OVERHEAD);
+                                dest[j], size+BLOSC_MAX_OVERHEAD, NULL, 0);
       }
     }
     blosc_set_timestamp(&current);
@@ -278,7 +278,7 @@ void do_bench(char *compressor, char *shuffle, int nthreads, int size, int elsiz
           nbytes = size;
         }
         else {
-          nbytes = blosc_decompress(dest[j], dest2, size);
+          nbytes = blosc_decompress(dest[j], dest2, size, NULL, 0);
         }
       }
     }

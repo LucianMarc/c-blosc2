@@ -103,6 +103,8 @@ struct blosc_context {
   uint8_t* bstarts;               /* Start of the buffer past header info */
   int32_t compcode;               /* Compressor code to use */
   int clevel;                     /* Compression level (1-9) */
+  uint8_t* dref;                  /* The reference data buffer */
+  int32_t drefsize;               /* The size of the reference data buffer */
 
   /* Threading */
   int32_t numthreads;
@@ -533,6 +535,8 @@ static int blosc_c(const struct blosc_context* context, int32_t blocksize,
   int32_t ctbytes = 0;              /* number of compressed bytes in block */
   int32_t maxout;
   int32_t typesize = context->typesize;
+  const uint8_t* dref = context->dref;
+  int32_t drefsize = context->drefsize;
   const uint8_t *_tmp = src;
   char *compname;
   int accel;
@@ -610,7 +614,7 @@ static int blosc_c(const struct blosc_context* context, int32_t blocksize,
     #endif /*  HAVE_ZLIB */
     else if (context->compcode == BLOSC_BDELTA) {
       cbytes = bdelta_compress((char *)_tmp+j*neblock, (size_t)neblock,
-			       (char *)dest);
+			       (char *)dest, (int)maxout, dref, (int)drefsize);
     }
 
     else {
@@ -648,8 +652,10 @@ static int blosc_c(const struct blosc_context* context, int32_t blocksize,
 }
 
 /* Decompress & unshuffle a single block */
-static int blosc_d(struct blosc_context* context, int32_t blocksize, int32_t leftoverblock,
-                   const uint8_t *src, uint8_t *dest, uint8_t *tmp, uint8_t *tmp2)
+static int blosc_d(struct blosc_context* context, int32_t blocksize,
+		   int32_t leftoverblock,
+                   const uint8_t *src, uint8_t *dest, uint8_t *tmp,
+		   uint8_t *tmp2)
 {
   int32_t j, neblock, nsplits;
   int32_t nbytes;                /* number of decompressed bytes in split */
@@ -658,6 +664,8 @@ static int blosc_d(struct blosc_context* context, int32_t blocksize, int32_t lef
   int32_t ntbytes = 0;           /* number of uncompressed bytes in block */
   uint8_t *_tmp = dest;
   int32_t typesize = context->typesize;
+  const uint8_t* dref = context->dref;
+  int32_t drefsize = context->drefsize;
   int32_t compcode;
   char *compname;
   int bscount;
@@ -710,7 +718,7 @@ static int blosc_d(struct blosc_context* context, int32_t blocksize, int32_t lef
       }
       #endif /*  HAVE_ZLIB */
       else if (compcode == BLOSC_BDELTA_FORMAT) {
-        nbytes = bdelta_decompress(src, cbytes, _tmp, neblock);
+        nbytes = bdelta_decompress(src, cbytes, _tmp, neblock, dref, drefsize);
       }
       else {
         blosc_compcode_to_compname(compcode, &compname);
@@ -930,16 +938,18 @@ static int32_t compute_blocksize(struct blosc_context* context, int32_t clevel, 
 }
 
 static int initialize_context_compression(struct blosc_context* context,
-                          int clevel,
-                          int doshuffle,
-                          size_t typesize,
-                          size_t sourcesize,
-                          const void* src,
-                          void* dest,
-                          size_t destsize,
-                          int32_t compressor,
-                          int32_t blocksize,
-                          int32_t numthreads)
+					  int clevel,
+					  int doshuffle,
+					  size_t typesize,
+					  size_t sourcesize,
+					  const void* src,
+					  void* dest,
+					  size_t destsize,
+					  int32_t compressor,
+					  int32_t blocksize,
+					  int32_t numthreads,
+					  const void *dref,
+					  size_t drefsize)
 {
   /* Set parameters */
   context->compress = 1;
@@ -953,6 +963,8 @@ static int initialize_context_compression(struct blosc_context* context,
   context->numthreads = numthreads;
   context->end_threads = 0;
   context->clevel = clevel;
+  context->dref = (uint8_t *)(dref);
+  context->drefsize = (int32_t)drefsize;
 
   /* Check buffer size limits */
   if (sourcesize > BLOSC_MAX_BUFFERSIZE) {
@@ -1138,7 +1150,7 @@ int blosc_compress_ctx(int clevel, int doshuffle, size_t typesize,
   context.threads_started = 0;
   error = initialize_context_compression(&context, clevel, doshuffle, typesize, nbytes,
                                   src, dest, destsize, blosc_compname_to_compcode(compressor),
-                                  blocksize, numinternalthreads);
+					 blocksize, numinternalthreads, NULL, 0);
   if (error < 0) { return error; }
 
   error = write_compression_header(&context, clevel, doshuffle);
@@ -1156,15 +1168,19 @@ int blosc_compress_ctx(int clevel, int doshuffle, size_t typesize,
 
 /* The public routine for compression.  See blosc.h for docstrings. */
 int blosc_compress(int clevel, int doshuffle, size_t typesize, size_t nbytes,
-                   const void *src, void *dest, size_t destsize)
+                   const void *src, void *dest, size_t destsize,
+		   const void *dref, size_t drefsize)
 {
   int error;
   int result;
 
   pthread_mutex_lock(&global_comp_mutex);
 
-  error = initialize_context_compression(g_global_context, clevel, doshuffle, typesize, nbytes,
-                                  src, dest, destsize, g_compressor, g_force_blocksize, g_threads);
+  error = initialize_context_compression(g_global_context, clevel, doshuffle,
+					 typesize, nbytes, src, dest,
+					 destsize, g_compressor,
+					 g_force_blocksize, g_threads,
+					 dref, drefsize);
   if (error < 0) { return error; }
 
   error = write_compression_header(g_global_context, clevel, doshuffle);
@@ -1181,7 +1197,8 @@ int blosc_run_decompression_with_context(struct blosc_context* context,
                                          const void* src,
                                          void* dest,
                                          size_t destsize,
-                                         int numinternalthreads)
+                                         int numinternalthreads,
+					 const void* dref, size_t drefsize)
 {
   uint8_t version;
   uint8_t versionlz;
@@ -1192,6 +1209,8 @@ int blosc_run_decompression_with_context(struct blosc_context* context,
   context->src = (const uint8_t*)src;
   context->dest = (uint8_t*)dest;
   context->destsize = destsize;
+  context->dref = (uint8_t*)dref;
+  context->drefsize = drefsize;
   context->num_output_bytes = 0;
   context->numthreads = numinternalthreads;
   context->end_threads = 0;
@@ -1255,7 +1274,7 @@ int blosc_decompress_ctx(const void *src, void *dest, size_t destsize,
                          int numinternalthreads)
 {
   struct blosc_context context;
-  int result = blosc_run_decompression_with_context(&context, src, dest, destsize, numinternalthreads);
+  int result = blosc_run_decompression_with_context(&context, src, dest, destsize, numinternalthreads, NULL, 0);
   context.threads_started = 0;
 
   if (numinternalthreads > 1)
@@ -1268,9 +1287,12 @@ int blosc_decompress_ctx(const void *src, void *dest, size_t destsize,
 
 
 /* The public routine for decompression.  See blosc.h for docstrings. */
-int blosc_decompress(const void *src, void *dest, size_t destsize)
+int blosc_decompress(const void *src, void *dest, size_t destsize,
+		     const void *dref, size_t drefsize)
 {
-  return blosc_run_decompression_with_context(g_global_context, src, dest, destsize, g_threads);
+  return blosc_run_decompression_with_context(g_global_context, src, dest,
+					      destsize, g_threads,
+					      dref, drefsize);
 }
 
 
@@ -1414,6 +1436,8 @@ static void *t_blosc(void *ctxt)
   uint8_t *bstarts;
   const uint8_t *src;
   uint8_t *dest;
+  const uint8_t *dref;
+  int32_t drefsize;
   uint8_t *tmp;
   uint8_t *tmp2;
   int rc;
@@ -1439,6 +1463,8 @@ static void *t_blosc(void *ctxt)
     bstarts = context->parent_context->bstarts;
     src = context->parent_context->src;
     dest = context->parent_context->dest;
+    dref = context->parent_context->dref;
+    drefsize = context->parent_context->drefsize;
 
     if (blocksize > context->tmpblocksize)
     {
@@ -1494,8 +1520,8 @@ static void *t_blosc(void *ctxt)
         }
         else {
           /* Regular compression */
-          cbytes = blosc_c(context->parent_context, bsize, leftoverblock, 0, ebsize,
-                           src+nblock_*blocksize, tmp2, tmp);
+          cbytes = blosc_c(context->parent_context, bsize, leftoverblock, 0,
+			   ebsize, src+nblock_*blocksize, tmp2, tmp);
         }
       }
       else {

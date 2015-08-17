@@ -29,7 +29,8 @@ static int test_getitem(size_t type_size, size_t num_elements,
   /* Compress the input data, then use blosc_getitem to extract (decompress)
      a range of elements into a new buffer. */
   blosc_compress(compression_level, do_shuffle, type_size, buffer_size,
-    original, intermediate, buffer_size + BLOSC_MAX_OVERHEAD);
+		 original, intermediate, buffer_size + BLOSC_MAX_OVERHEAD,
+		 NULL, 0);
   blosc_getitem(intermediate, 0, num_elements, result);
 
   /* The round-tripped data matches the original data when the

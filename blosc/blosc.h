@@ -170,7 +170,8 @@ BLOSC_EXPORT void blosc_destroy(void);
   */
 BLOSC_EXPORT int blosc_compress(int clevel, int doshuffle, size_t typesize,
 				size_t nbytes, const void *src, void *dest,
-				size_t destsize);
+				size_t destsize, const void *dref,
+				size_t drefsize);
 
 
 /**
@@ -210,7 +211,9 @@ BLOSC_EXPORT int blosc_compress_ctx(int clevel, int doshuffle, size_t typesize,
   output buffer is not large enough, then 0 (zero) or a negative value
   will be returned instead.
 */
-BLOSC_EXPORT int blosc_decompress(const void *src, void *dest, size_t destsize);
+  BLOSC_EXPORT int blosc_decompress(const void *src, void *dest,
+				    size_t destsize, const void *dref,
+				    size_t drefsize);
 
 
 /**

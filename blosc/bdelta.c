@@ -79,7 +79,8 @@
 #define HASH_FUNCTION(v,p) { v = BDELTA_READU16(p); v ^= BDELTA_READU16(p+1)^(v>>(16-HASH_LOG));v &= HASH_MASK; }
 
 
-int bdelta_compress(const void* input, int length, void* output)
+int bdelta_compress(const void* input, int length, void* output, int maxout,
+		    const void* dref, int drefsize)
 {
   const uint8_t* ip = (const uint8_t*) input;
   const uint8_t* ip_bound = ip + length - 2;
@@ -92,6 +93,7 @@ int bdelta_compress(const void* input, int length, void* output)
 
   uint32_t copy;
 
+  /* printf("bdelta_compress: %d, %d\n", drefsize, maxout); */
   /* sanity check */
   if(length < 4)
   {
@@ -299,7 +301,8 @@ int bdelta_compress(const void* input, int length, void* output)
   return op - (uint8_t*)output;
 }
 
-int bdelta_decompress(const void* input, int length, void* output, int maxout)
+int bdelta_decompress(const void* input, int length, void* output, int maxout,
+		      const void* dref, int drefsize)
 {
   const uint8_t* ip = (const uint8_t*) input;
   const uint8_t* ip_limit  = ip + length;
@@ -308,6 +311,7 @@ int bdelta_decompress(const void* input, int length, void* output, int maxout)
   uint32_t ctrl = (*ip++) & 31;
   int loop = 1;
 
+  /* printf("bdelta_decompress: %d\n", drefsize); */
   do
   {
     const uint8_t* ref = op;

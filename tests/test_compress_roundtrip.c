@@ -31,8 +31,9 @@ static int test_compress_roundtrip(size_t type_size, size_t num_elements,
   /* Compress the input data and store it in an intermediate buffer.
      Decompress the data from the intermediate buffer into a result buffer. */
   blosc_compress(compression_level, do_shuffle, type_size, buffer_size,
-    original, intermediate, buffer_size + BLOSC_MAX_OVERHEAD);
-  blosc_decompress(intermediate, result, buffer_size);
+		 original, intermediate, buffer_size + BLOSC_MAX_OVERHEAD,
+		 NULL, 0);
+  blosc_decompress(intermediate, result, buffer_size, NULL, 0);
 
   /* The round-tripped data matches the original data when the
      result of memcmp is 0. */

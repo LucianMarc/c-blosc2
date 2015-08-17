@@ -36,6 +36,7 @@
 #define SHAPE {100,100,100}
 #define CHUNKSHAPE {1,100,100}
 
+
 int main(){
   static int32_t data[SIZE];
   int32_t* data_dest;
@@ -59,7 +60,7 @@ int main(){
   /* Create a super-chunk container */
   sc_params->filters[0] = BLOSC_DELTA;
   sc_params->filters[1] = BLOSC_SHUFFLE;
-  sc_params->compressor = BLOSC_BLOSCLZ;
+  sc_params->compressor = BLOSC_BDELTA;
   sc_params->clevel = 5;
   sc_header = blosc2_new_schunk(sc_params);
 
