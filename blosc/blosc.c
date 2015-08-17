@@ -19,6 +19,7 @@
 #include "blosc.h"
 #include "shuffle.h"
 #include "blosclz.h"
+#include "bdelta.h"
 #if defined(HAVE_LZ4)
   #include "lz4.h"
   #include "lz4hc.h"
@@ -304,6 +305,8 @@ static int compname_to_clibcode(const char *compname)
     return BLOSC_SNAPPY_LIB;
   if (strcmp(compname, BLOSC_ZLIB_COMPNAME) == 0)
     return BLOSC_ZLIB_LIB;
+  if (strcmp(compname, BLOSC_BDELTA_COMPNAME) == 0)
+    return BLOSC_BDELTA_LIB;
   return -1;
 }
 
@@ -314,6 +317,7 @@ static char *clibcode_to_clibname(int clibcode)
   if (clibcode == BLOSC_LZ4_LIB) return BLOSC_LZ4_LIBNAME;
   if (clibcode == BLOSC_SNAPPY_LIB) return BLOSC_SNAPPY_LIBNAME;
   if (clibcode == BLOSC_ZLIB_LIB) return BLOSC_ZLIB_LIBNAME;
+  if (clibcode == BLOSC_BDELTA_LIB) return BLOSC_BDELTA_LIBNAME;
   return NULL;                  /* should never happen */
 }
 
@@ -339,6 +343,8 @@ int blosc_compcode_to_compname(int compcode, char **compname)
     name = BLOSC_SNAPPY_COMPNAME;
   else if (compcode == BLOSC_ZLIB)
     name = BLOSC_ZLIB_COMPNAME;
+  else if (compcode == BLOSC_BDELTA)
+    name = BLOSC_BDELTA_COMPNAME;
 
   *compname = name;
 
@@ -359,6 +365,8 @@ int blosc_compcode_to_compname(int compcode, char **compname)
   else if (compcode == BLOSC_ZLIB)
     code = BLOSC_ZLIB;
 #endif /*  HAVE_ZLIB */
+  else if (compcode == BLOSC_BDELTA)
+    code = BLOSC_BDELTA;
 
   return code;
 }
@@ -389,6 +397,9 @@ int blosc_compname_to_compcode(const char *compname)
     code = BLOSC_ZLIB;
   }
 #endif /*  HAVE_ZLIB */
+  else if (strcmp(compname, BLOSC_BDELTA_COMPNAME) == 0) {
+    code = BLOSC_BDELTA;
+  }
 
 return code;
 }
@@ -597,6 +608,10 @@ static int blosc_c(const struct blosc_context* context, int32_t blocksize,
                                   (char *)dest, (size_t)maxout, context->clevel);
     }
     #endif /*  HAVE_ZLIB */
+    else if (context->compcode == BLOSC_BDELTA) {
+      cbytes = bdelta_compress((char *)_tmp+j*neblock, (size_t)neblock,
+			       (char *)dest);
+    }
 
     else {
       blosc_compcode_to_compname(context->compcode, &compname);
@@ -694,6 +709,9 @@ static int blosc_d(struct blosc_context* context, int32_t blocksize, int32_t lef
                                       (char*)_tmp, (size_t)neblock);
       }
       #endif /*  HAVE_ZLIB */
+      else if (compcode == BLOSC_BDELTA_FORMAT) {
+        nbytes = bdelta_decompress(src, cbytes, _tmp, neblock);
+      }
       else {
         blosc_compcode_to_compname(compcode, &compname);
         fprintf(stderr,
@@ -1004,16 +1022,21 @@ static int write_compression_header(struct blosc_context* context, int clevel, i
 #if defined(HAVE_SNAPPY)
   case BLOSC_SNAPPY:
     compcode = BLOSC_SNAPPY_FORMAT;
-    context->dest[1] = BLOSC_SNAPPY_VERSION_FORMAT;    /* snappy format version */
+    context->dest[1] = BLOSC_SNAPPY_VERSION_FORMAT;  /* snappy format version */
     break;
 #endif /*  HAVE_SNAPPY */
 
 #if defined(HAVE_ZLIB)
   case BLOSC_ZLIB:
     compcode = BLOSC_ZLIB_FORMAT;
-    context->dest[1] = BLOSC_ZLIB_VERSION_FORMAT;      /* zlib format version */
+    context->dest[1] = BLOSC_ZLIB_VERSION_FORMAT;   /* zlib format version */
     break;
 #endif /*  HAVE_ZLIB */
+
+  case BLOSC_BDELTA:
+    compcode = BLOSC_BDELTA_FORMAT;
+    context->dest[1] = BLOSC_BDELTA_VERSION_FORMAT;  /* bdelta format version */
+    break;
 
   default:
   {
@@ -1681,6 +1704,7 @@ char* blosc_list_compressors(void)
 #if defined(HAVE_ZLIB)
   strcat(ret, ","); strcat(ret, BLOSC_ZLIB_COMPNAME);
 #endif /*  HAVE_ZLIB */
+  strcat(ret, ","); strcat(ret, BLOSC_BDELTA_COMPNAME);
   compressors_list_done = 1;
   return ret;
 }
@@ -1731,6 +1755,9 @@ int blosc_get_complib_info(char *compname, char **complib, char **version)
     clibversion = ZLIB_VERSION;
   }
 #endif /*  HAVE_ZLIB */
+  else if (clibcode == BLOSC_BDELTA_LIB) {
+    clibversion = BDELTA_VERSION_STRING;
+  }
 
   *complib = strdup(clibname);
   *version = strdup(clibversion);

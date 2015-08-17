@@ -27,6 +27,7 @@ extern "C" {
 #define BLOSC_VERSION_DATE     "$Date:: 2015-07-30 #$"    /* date version */
 
 #define BLOSCLZ_VERSION_STRING "1.0.5"   /* the internal compressor version */
+#define BDELTA_VERSION_STRING ".1"  /* the internal bdelta compressor version */
 
 /* The *_FORMAT symbols should be just 1-byte long */
 #define BLOSC_VERSION_FORMAT    2   /* Blosc format version, starting at 1 */
@@ -68,6 +69,7 @@ extern "C" {
 #define BLOSC_LZ4HC     2
 #define BLOSC_SNAPPY    3
 #define BLOSC_ZLIB      4
+#define BLOSC_BDELTA    5
 
 /* Names for the different compressors shipped with Blosc */
 #define BLOSC_BLOSCLZ_COMPNAME   "blosclz"
@@ -75,18 +77,21 @@ extern "C" {
 #define BLOSC_LZ4HC_COMPNAME     "lz4hc"
 #define BLOSC_SNAPPY_COMPNAME    "snappy"
 #define BLOSC_ZLIB_COMPNAME      "zlib"
+#define BLOSC_BDELTA_COMPNAME    "bdelta"
 
 /* Codes for the different compression libraries shipped with Blosc */
 #define BLOSC_BLOSCLZ_LIB   0
 #define BLOSC_LZ4_LIB       1
 #define BLOSC_SNAPPY_LIB    2
 #define BLOSC_ZLIB_LIB      3
+#define BLOSC_BDELTA_LIB    4
 
 /* Names for the different compression libraries shipped with Blosc */
 #define BLOSC_BLOSCLZ_LIBNAME   "BloscLZ"
 #define BLOSC_LZ4_LIBNAME       "LZ4"
 #define BLOSC_SNAPPY_LIBNAME    "Snappy"
 #define BLOSC_ZLIB_LIBNAME      "Zlib"
+#define BLOSC_BDELTA_LIBNAME    "Bdelta"
 
 /* The codes for compressor formats shipped with Blosc (code must be < 8) */
 #define BLOSC_BLOSCLZ_FORMAT  BLOSC_BLOSCLZ_LIB
@@ -95,6 +100,7 @@ extern "C" {
 #define BLOSC_LZ4HC_FORMAT    BLOSC_LZ4_LIB
 #define BLOSC_SNAPPY_FORMAT   BLOSC_SNAPPY_LIB
 #define BLOSC_ZLIB_FORMAT     BLOSC_ZLIB_LIB
+#define BLOSC_BDELTA_FORMAT   BLOSC_BDELTA_LIB
 
 
 /* The version formats for compressors shipped with Blosc */
@@ -104,6 +110,7 @@ extern "C" {
 #define BLOSC_LZ4HC_VERSION_FORMAT    1  /* LZ4HC and LZ4 share the same format */
 #define BLOSC_SNAPPY_VERSION_FORMAT   1
 #define BLOSC_ZLIB_VERSION_FORMAT     1
+#define BLOSC_BDELTA_VERSION_FORMAT   0
 
 /**
   Initialize the Blosc library environment.

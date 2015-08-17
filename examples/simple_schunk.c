@@ -30,15 +30,17 @@
 
 #include <stdio.h>
 #include <assert.h>
-#include "blosc.h"
+#include "../blosc/blosc.h"
 
 #define SIZE 100*100*100
 #define SHAPE {100,100,100}
 #define CHUNKSHAPE {1,100,100}
 
+
 int main(){
   static float data[SIZE];
   static float data2[SIZE];
+  int32_t nbytes, cbytes;
   void* chunk = data2;
   float* data_dest;
   int isize = SIZE * sizeof(float), osize = SIZE * sizeof(float);
@@ -72,7 +74,7 @@ int main(){
 
   /* Create a super-chunk container */
   sc_params->filters[0] = BLOSC_SHUFFLE;
-  sc_params->compressor = BLOSC_BLOSCLZ;
+  sc_params->compressor = BLOSC_BDELTA;
   sc_params->clevel = 5;
   sc_header = blosc2_new_schunk(sc_params);
 
@@ -84,13 +86,14 @@ int main(){
   nchunks = blosc2_append_buffer(sc_header, sizeof(float), isize, data);
   assert(nchunks == 2);
 
+  /* Gather some info */
+  nbytes = sc_header->nbytes;
+  cbytes = sc_header->cbytes;
+  printf("Compression super-chunk: %d -> %d (%.1fx)\n",
+         nbytes, cbytes, (1.*nbytes) / cbytes);
+
   /* Retrieve and decompress the chunks (0-based count) */
   dsize = blosc2_decompress_chunk(sc_header, 1, &data_dest);
-  if (dsize < 0) {
-    printf("Decompression error.  Error code: %d\n", dsize);
-    return dsize;
-  }
-  dsize = blosc2_decompress_chunk(sc_header, 0, &data_dest);
   if (dsize < 0) {
     printf("Decompression error.  Error code: %d\n", dsize);
     return dsize;
