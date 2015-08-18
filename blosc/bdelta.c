@@ -63,7 +63,6 @@
 
 
 #define MAX_COPY       32
-#define MAX_LEN       264  /* 256 + 8 */
 #define MAX_DISTANCE 8192
 #define MAX_FARDISTANCE (65535+MAX_DISTANCE-1)
 
@@ -73,7 +72,7 @@
 #define BDELTA_READU16(p) ((p)[0] | (p)[1]<<8)
 #endif
 
-#define HASH_LOG  13
+#define HASH_LOG  12
 #define HASH_SIZE (1<< HASH_LOG)
 #define HASH_MASK  (HASH_SIZE-1)
 #define HASH_FUNCTION(v,p) { v = BDELTA_READU16(p); v ^= BDELTA_READU16(p+1)^(v>>(16-HASH_LOG));v &= HASH_MASK; }
@@ -83,12 +82,13 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
 		    const void* dref, int drefsize)
 {
   const uint8_t* ip = (const uint8_t*) input;
+  const uint8_t* ibase = (const uint8_t*) input;
   const uint8_t* ip_bound = ip + length - 2;
   const uint8_t* ip_limit = ip + length - 12;
   uint8_t* op = (uint8_t*) output;
 
-  const uint8_t* htab[HASH_SIZE];
-  const uint8_t** hslot;
+  uint32_t htab[HASH_SIZE];
+  uint32_t* hslot;
   uint32_t hval;
 
   uint32_t copy;
@@ -112,7 +112,7 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
 
   /* initializes hash table */
   for (hslot = htab; hslot < htab + HASH_SIZE; hslot++)
-    *hslot = ip;
+    *hslot = 0;
 
   /* we start with literal copy */
   copy = 2;
@@ -142,15 +142,15 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
     }
 
     /* find potential match */
-    HASH_FUNCTION(hval,ip);
+    HASH_FUNCTION(hval, ip);
     hslot = htab + hval;
-    ref = htab[hval];
+    ref = ibase + *hslot;
 
     /* calculate distance to the match */
     distance = anchor - ref;
 
     /* update hash table */
-    *hslot = anchor;
+    *hslot = (uint32_t)(anchor - ibase);
 
     /* is this a match? check the first 3 bytes */
     if(distance==0 || 
@@ -256,9 +256,9 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
 
     /* update the hash at match boundary */
     HASH_FUNCTION(hval,ip);
-    htab[hval] = ip++;
+    htab[hval] = (uint32_t)(ip++ - ibase);
     HASH_FUNCTION(hval,ip);
-    htab[hval] = ip++;
+    htab[hval] = (uint32_t)(ip++ - ibase);
 
     /* assuming literal copy */
     *op++ = MAX_COPY-1;
