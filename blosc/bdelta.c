@@ -83,7 +83,7 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
 		    const void* dref, int drefsize)
 {
   const uint8_t* ip = (const uint8_t*) input;
-  const uint8_t* ibase = (const uint8_t*) input;
+  const uint8_t* rbase = (const uint8_t*) input;
   const uint8_t* ip_bound = ip + length - 2;
   const uint8_t* ip_limit = ip + length - 12;
   uint8_t* op = (uint8_t*) output;
@@ -136,13 +136,13 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
     /* find potential match */
     HASH_FUNCTION(hval, ip);
     hslot = htab + hval;
-    ref = ibase + *hslot;
+    ref = rbase + *hslot;
 
     /* calculate distance to the match */
     distance = anchor - ref;
 
     /* update hash table */
-    *hslot = (uint32_t)(anchor - ibase);
+    *hslot = (uint32_t)(anchor - rbase);
 
     /* is this a match? check the first 3 bytes */
     if(distance==0 || 
@@ -158,20 +158,9 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
       len += 2;
     }
     
-    /* last matched byte */
-    ip = anchor + len;
-
     /* distance is biased */
     distance--;
 
-    if(!distance)
-    {
-      /* zero distance means a run */
-      uint8_t x = ip[-1];
-      while(ip < ip_bound)
-        if(*ref++ != x) break; else ip++;
-    }
-    else
     for(;;)
     {
       /* safe because the outer check against ip limit */
@@ -246,9 +235,9 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
 
     /* update the hash at match boundary */
     HASH_FUNCTION(hval,ip);
-    htab[hval] = (uint32_t)(ip++ - ibase);
+    htab[hval] = (uint32_t)(ip++ - rbase);
     HASH_FUNCTION(hval,ip);
-    htab[hval] = (uint32_t)(ip++ - ibase);
+    htab[hval] = (uint32_t)(ip++ - rbase);
 
     /* assuming literal copy */
     *op++ = MAX_COPY-1;
