@@ -62,6 +62,7 @@
 #endif
 
 
+#define MINMATCH        3
 #define MAX_COPY       32
 #define MAX_DISTANCE 8192
 #define MAX_FARDISTANCE (65535+MAX_DISTANCE-1)
@@ -132,15 +133,6 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
     /* comparison starting-point */
     const uint8_t* anchor = ip;
 
-    /* check for a run */
-    if(ip[0] == ip[-1] && BDELTA_READU16(ip-1)==BDELTA_READU16(ip+1))
-    {
-      distance = 1;
-      ip += 3;
-      ref = anchor - 1 + 3;
-      goto match;
-    }
-
     /* find potential match */
     HASH_FUNCTION(hval, ip);
     hslot = htab + hval;
@@ -166,8 +158,6 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
       len += 2;
     }
     
-    match:
-
     /* last matched byte */
     ip = anchor + len;
 
@@ -295,11 +285,9 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
   else
     op--;
 
-  /* marker for bdelta2 */
-  *(uint8_t*)output |= (1 << 5);
-
   return op - (uint8_t*)output;
 }
+
 
 int bdelta_decompress(const void* input, int length, void* output, int maxout,
 		      const void* dref, int drefsize)
