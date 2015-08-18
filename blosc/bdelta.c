@@ -161,21 +161,8 @@ int bdelta_compress(const void* input, int length, void* output, int maxout,
     /* distance is biased */
     distance--;
 
-    for(;;)
-    {
-      /* safe because the outer check against ip limit */
+    while(ip < ip_bound)
       if(*ref++ != *ip++) break;
-      if(*ref++ != *ip++) break;
-      if(*ref++ != *ip++) break;
-      if(*ref++ != *ip++) break;
-      if(*ref++ != *ip++) break;
-      if(*ref++ != *ip++) break;
-      if(*ref++ != *ip++) break;
-      if(*ref++ != *ip++) break;
-      while(ip < ip_bound)
-        if(*ref++ != *ip++) break;
-      break;
-    }
 
     /* if we have copied something, adjust the copy count */
     if(copy)
