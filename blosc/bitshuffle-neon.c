@@ -17,7 +17,7 @@
 #include <arm_neon.h>
 
 /* The next is useful for debugging purposes */
-#if 0
+#if 1
 #include <stdio.h>
 #include <string.h>
 
@@ -923,7 +923,9 @@ bitshuffle_neon(void* _src, void* _dest, const size_t size,
   /* If the block size is too small to be vectorized,
      use the generic implementation. */
   if (size * elem_size < vectorized_chunk_size) {
+	  printf("hola1.0: %ld\n", vectorized_chunk_size);
     count = bshuf_trans_bit_elem_scal((void*)_src, (void*)_dest, size, elem_size, tmp_buf);
+      printf("hola1.1: %ld\n", count);
     return count;
   }
 
@@ -968,7 +970,10 @@ bitunshuffle_neon(void* _src, void* _dest, const size_t size,
   /* If the block size is too small to be vectorized,
      use the generic implementation. */
   if (size * elem_size < vectorized_chunk_size) {
+	  printf("hola2.0: %ld\n", vectorized_chunk_size);
+   //No conseguim implementar la funció generica amb aquesta versió de neon.
     count = bshuf_untrans_bit_elem_scal((void*)_src, (void*)_dest, size, elem_size, tmp_buf);
+      printf("hola2.1: %ld\n", count);
     return count;
   }
 
